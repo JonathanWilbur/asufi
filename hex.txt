@@ -1,0 +1,302 @@
+# typedef struct _IMAGE_DOS_HEADER {      // MS-DOS EXE header
+#     WORD   e_magic;                     // Magic number: 0x5A4D or MZ
+#     WORD   e_cblp;                      // Bytes on last page of file
+#     WORD   e_cp;                        // Pages in file
+#     WORD   e_crlc;                      // Relocations
+#     WORD   e_cparhdr;                   // Size of header, in paragraphs
+#     WORD   e_minalloc;                  // Min - extra paragraphs needed
+#     WORD   e_maxalloc;                  // Max - extra paragraphs needed
+#     WORD   e_ss;                        // Initial (relative) SS value
+#     WORD   e_sp;                        // Initial SP value
+#     WORD   e_csum;                      // Checksum
+#     WORD   e_ip;                        // Initial IP value
+#     WORD   e_cs;                        // Initial (relative) CS value
+#     WORD   e_lfarlc;                    // File address of relocation table
+#     WORD   e_ovno;                      // Overlay number
+#     WORD   e_res[4];                    // Reserved words
+#     WORD   e_oemid;                     // OEM identifier
+#     WORD   e_oeminfo;                   // OEM information
+#     WORD   e_res2[10];                  // Reserved words
+#     LONG   e_lfanew;                    // Offset to NT header
+# } IMAGE_DOS_HEADER, *PIMAGE_DOS_HEADER;
+
+# 64 Bytes: the DOS header
+# What follows are the typical values for these fields
+4D 5A       # e_magic
+00 00       # e_cblp
+00 00       # e_cp
+00 00       # e_crlc
+00 04       # e_cparhdr
+00 10       # e_minalloc
+FF FF       # e_maxalloc
+00 00       # e_ss
+00 B8       # e_sp
+00 00       # e_csum
+00 00       # e_ip
+00 00       # e_cs
+00 40       # e_lfarlc
+00 00       # e_ovno
+00 00       # e_res[0]
+00 00       # e_res[1]
+00 00       # e_res[2]
+00 00       # e_res[3]
+00 00       # e_oemid
+00 00       # e_oeminfo
+00 00       # e_res2[0]
+00 00       # e_res2[1]
+00 00       # e_res2[2]
+00 00       # e_res2[3]
+00 00       # e_res2[4]
+00 00       # e_res2[5]
+00 00       # e_res2[6]
+00 00       # e_res2[7]
+00 00       # e_res2[8]
+00 00       # e_res2[9]
+80 00 00 00 # e_lfanew (0x80 = 128)
+
+# 64 bytes: the DOS stub code
+# It just prints "This program cannot be run in DOS mode" and exits.
+0E 1F BA 0E 00 B4 09 CD  21 B8 01 4C CD 21 54 68
+69 73 20 70 72 6F 67 72  61 6D 20 63 61 6E 6E 6F 
+74 20 62 65 20 72 75 6E  20 69 6E 20 44 4F 53 20 
+6D 6F 64 65 2E 0D 0D 0A  24 00 00 00 00 00 00 00
+
+# 24 Bytes: the COFF header
+# struct PeHeader {
+# 	uint32_t mMagic; // PE\0\0 or 0x00004550
+# 	uint16_t mMachine;
+# 	uint16_t mNumberOfSections;
+# 	uint32_t mTimeDateStamp;
+# 	uint32_t mPointerToSymbolTable;
+# 	uint32_t mNumberOfSymbols;
+# 	uint16_t mSizeOfOptionalHeader;
+# 	uint16_t mCharacteristics;
+# };
+50 45 00 00     # mMagic
+64 86           # mMachine: X86-64
+02 00           # mNumberOfSections: Just .rodata and .text for now.
+00 00 00 00     # mTimeDateStamp: There's no need to be honest here.
+00 00 00 00     # mPointerToSymbolTable: no symbols (PE files I've seen use it though!)
+00 00 00 00     # mNumberOfSymbols: 0 symbols
+F0 00           # mSizeOfOptionalHeader
+06 02           # mCharacteristics: The important thing is the 02, meaning "executable"
+
+# The optional PE header
+# typedef struct _IMAGE_OPTIONAL_HEADER64 {
+#     WORD        Magic;
+#     BYTE        MajorLinkerVersion;
+#     BYTE        MinorLinkerVersion;
+#     DWORD       SizeOfCode;
+#     DWORD       SizeOfInitializedData;
+#     DWORD       SizeOfUninitializedData;
+#     DWORD       AddressOfEntryPoint;
+#     DWORD       BaseOfCode;
+#     ULONGLONG   ImageBase;
+#     DWORD       SectionAlignment;
+#     DWORD       FileAlignment;
+#     WORD        MajorOperatingSystemVersion;
+#     WORD        MinorOperatingSystemVersion;
+#     WORD        MajorImageVersion;
+#     WORD        MinorImageVersion;
+#     WORD        MajorSubsystemVersion;
+#     WORD        MinorSubsystemVersion;
+#     DWORD       Win32VersionValue;
+#     DWORD       SizeOfImage;
+#     DWORD       SizeOfHeaders;
+#     DWORD       CheckSum;
+#     WORD        Subsystem;
+#     WORD        DllCharacteristics;
+#     ULONGLONG   SizeOfStackReserve;
+#     ULONGLONG   SizeOfStackCommit;
+#     ULONGLONG   SizeOfHeapReserve;
+#     ULONGLONG   SizeOfHeapCommit;
+#     DWORD       LoaderFlags;
+#     DWORD       NumberOfRvaAndSizes;
+#     IMAGE_DATA_DIRECTORY DataDirectory[IMAGE_NUMBEROF_DIRECTORY_ENTRIES];
+# } IMAGE_OPTIONAL_HEADER64, *PIMAGE_OPTIONAL_HEADER64;
+0b 02       # PE32+ (64 bit)
+02          # mMajorLinkerVersion: I've seen this value, but IDK why.
+22          # mMinorLinkerVersion: I've seen this value, but IDK why.
+00 10 00 00 # mSizeOfCode // TODO: I'm just guessing overshooting it to 4096 will be fine...
+00 10 00 00 # mSizeOfInitializedData // TODO: I'm just guessing overshooting it to 4096 will be fine...
+00 00 00 00 # mSizeOfUninitializedData
+00 30 00 00 # mAddressOfEntryPoint: Start of .text section.
+00 30 00 00 # mBaseOfCode: I think this is supposed to be the start of the .text section as well.
+00 00 00 00 00 00 00 00     # mImageBase FIXME!
+00 10 00 00 # mSectionAlignment: the default for this architecture of 4096
+00 02 00 00 # mFileAlignment: the default of 512
+00 00       # mMajorOperatingSystemVersion
+00 00       # mMinorOperatingSystemVersion
+00 00       # mMajorImageVersion
+00 00       # mMinorImageVersion
+00 00       # mMajorSubsystemVersion
+00 00       # mMinorSubsystemVersion
+00 00 00 00 # mWin32VersionValue
+00 40 00 00 # mSizeOfImage // FIXME: I am guessing 4 * 4K pages is correct?
+01 00 00 00 # mSizeOfHeaders (1024-byte headers) // FIXME: I think just 1 * 1024 bytes.
+09 87 01 00 # mCheckSum: I bet this is not checked.
+0a 00       # mSubsystem: EFI Application (10)
+10 00       # mDllCharacteristics
+00 00 00 00 00 00 00 00     # mSizeOfStackReserve
+00 00 00 00 00 00 00 00     # mSizeOfStackCommit
+00 00 00 00 00 00 00 00     # mSizeOfHeapReserve
+00 00 00 00 00 00 00 00     # mSizeOfHeapCommit
+00 00 00 00 # mLoaderFlags
+10 00 00 00 # mNumberOfRvaAndSizes (16 of them)
+
+# The Data Directory
+# typedef struct _IMAGE_DATA_DIRECTORY {
+#     DWORD   VirtualAddress;
+#     DWORD   Size;
+# } IMAGE_DATA_DIRECTORY, *PIMAGE_DATA_DIRECTORY;
+00 00 00 00  00 00 00 00    # Export Directory [.edata (or where ever we found it)]
+00 00 00 00  00 00 00 00    # Import Directory [parts of .idata]
+00 00 00 00  00 00 00 00    # Resource Directory [.rsrc]
+00 00 00 00  00 00 00 00    # Exception Directory [.pdata]
+00 00 00 00  00 00 00 00    # Security Directory
+00 00 00 00  00 00 00 00    # Base Relocation Directory [.reloc]
+00 00 00 00  00 00 00 00    # Debug Directory
+00 00 00 00  00 00 00 00    # Description Directory
+00 00 00 00  00 00 00 00    # Special Directory
+00 00 00 00  00 00 00 00    # Thread Storage Directory [.tls]
+00 00 00 00  00 00 00 00    # Load Configuration Directory
+00 00 00 00  00 00 00 00    # Bound Import Directory
+00 00 00 00  00 00 00 00    # Import Address Table Directory
+00 00 00 00  00 00 00 00    # Delay Import Directory
+00 00 00 00  00 00 00 00    # CLR Runtime Header
+00 00 00 00  00 00 00 00    # Reserved
+
+# struct IMAGE_SECTION_HEADER { // size 40 bytes
+# 	char[8]  mName;
+# 	uint32_t mVirtualSize;
+# 	uint32_t mVirtualAddress;
+# 	uint32_t mSizeOfRawData;
+# 	uint32_t mPointerToRawData;
+# 	uint32_t mPointerToRelocations;
+# 	uint32_t mPointerToLinenumbers;
+# 	uint16_t mNumberOfRelocations;
+# 	uint16_t mNumberOfLinenumbers;
+# 	uint32_t mCharacteristics;
+# };
+
+# Offset 392
+
+# .rodata header
+2e 72 6f 64 61 74 61 00     # mName: ".rodata"
+20 00 00 00                 # mVirtualSize: 32 bytes
+00 10 00 00                 # mVirtualAddress
+20 00 00 00                 # mSizeOfRawData: 32
+d8 01 00 00                 # mPointerToRawData
+00 00 00 00                 # mPointerToRelocations: I think this can just be zeroed in this example.
+00 00 00 00                 # mPointerToLinenumbers: Should be zeroed.
+00 00                       # mNumberOfRelocations: Should be zeroed.
+00 00                       # mNumberOfLinenumbers: Should be zeroed.
+00 00 00 40                 # mCharacteristics: only one flag set: IMAGE_SCN_MEM_READ
+
+# Commented out because I don't think I need any relocations for this to work.
+## .reloc header
+# 2e 72 65 6c 6f 63 00 00     # mName: ".reloc"
+# 00 00 00 00                 # mVirtualSize: // FIXME: Apparently does need to be set.
+# 00 20 00 00                 # mVirtualAddress: I am pretty sure this should just be zeroed.
+# 00 00 00 00                 # mSizeOfRawData: // FIXME:
+# 00 00 00 00                 # mPointerToRawData: # FIXME: fill this in
+# 00 00 00 00                 # mPointerToRelocations: I think this can just be zeroed in this example.
+# 00 00 00 00                 # mPointerToLinenumbers: Should be zeroed.
+# 00 00                       # mNumberOfRelocations: Should be zeroed.
+# 00 00                       # mNumberOfLinenumbers: Should be zeroed.
+# 00 00 00 40                 # mCharacteristics: only one flag set: IMAGE_SCN_MEM_READ
+
+# // FIXME: EFI expects .text to be the first section.
+# .text header
+2e 74 65 78 74 00 00 00     # mName: ".text"
+00 10 00 00                 # mVirtualSize: 16 bytes # FIXME: This is not right.
+00 30 00 00                 # mVirtualAddress
+37 00 00 00                 # mSizeOfRawData: 55
+f8 01 00 00                 # mPointerToRawData: Start of .rodata content + 32.
+00 00 00 00                 # mPointerToRelocations: I think this can just be zeroed in this example.
+00 00 00 00                 # mPointerToLinenumbers: Should be zeroed.
+00 00                       # mNumberOfRelocations: Should be zeroed.
+00 00                       # mNumberOfLinenumbers: Should be zeroed.
+00 00 00 20                 # mCharacteristics: only one flag set: IMAGE_SCN_MEM_EXECUTE
+
+# This should be offset 392 + 80 = 472
+
+# .rodata contents ("Hello World!\r\n" in UTF-16)
+00 48 00 65 00 6c 00 6c  00 6f 00 20 00 57 00 6f
+00 72 00 6c 00 64 00 21  00 0d 00 0a 00 00 00 00
+
+# This should be offset 392 + 80 + 32 = 504
+
+# .text contents (x86-64 bytecode)
+
+# typedef struct _EFI_TABLE_HEADER {
+#     UINT64                      Signature;
+#     UINT32                      Revision;
+#     UINT32                      HeaderSize;
+#     UINT32                      CRC32;
+#     UINT32                      Reserved;
+# } EFI_TABLE_HEADER;
+
+# typedef struct _SIMPLE_TEXT_OUTPUT_INTERFACE {
+#     EFI_TEXT_RESET                  Reset; // pointer
+#     EFI_TEXT_OUTPUT_STRING          OutputString;
+#     EFI_TEXT_TEST_STRING            TestString;
+#     EFI_TEXT_QUERY_MODE             QueryMode;
+#     EFI_TEXT_SET_MODE               SetMode;
+#     EFI_TEXT_SET_ATTRIBUTE          SetAttribute;
+#     EFI_TEXT_CLEAR_SCREEN           ClearScreen;
+#     EFI_TEXT_SET_CURSOR_POSITION    SetCursorPosition;
+#     EFI_TEXT_ENABLE_CURSOR          EnableCursor;
+#     SIMPLE_TEXT_OUTPUT_MODE         *Mode;
+# } SIMPLE_TEXT_OUTPUT_INTERFACE, EFI_SIMPLE_TEXT_OUT_PROTOCOL;
+
+# typedef struct _EFI_SYSTEM_TABLE {
+#     EFI_TABLE_HEADER                Hdr; // 192 bits / 24 bytes
+#     CHAR16                          *FirmwareVendor; // 2 bytes
+#     UINT32                          FirmwareRevision; // 4 bytes
+#     EFI_HANDLE                      ConsoleInHandle; // 8 bytes
+#     SIMPLE_INPUT_INTERFACE          *ConIn; // 8 bytes
+#     EFI_HANDLE                      ConsoleOutHandle; // 8 bytes
+#     SIMPLE_TEXT_OUTPUT_INTERFACE    *ConOut; // 8 bytes
+#     EFI_HANDLE                      StandardErrorHandle;
+#     SIMPLE_TEXT_OUTPUT_INTERFACE    *StdErr;
+#     EFI_RUNTIME_SERVICES            *RuntimeServices;
+#     EFI_BOOT_SERVICES               *BootServices;
+#     UINTN                           NumberOfTableEntries;
+#     EFI_CONFIGURATION_TABLE         *ConfigurationTable;
+# } EFI_SYSTEM_TABLE;
+
+# SystemTable->ConOut->OutputString(SystemTable->ConOut, L"Hello World!\n");
+# return EFI_SUCCESS;
+
+# Calling Conventions: https://uefi.org/specs/UEFI/2.9_A/02_Overview.html#detailed-calling-conventions
+# Rcx, Rdx, R8, and R9 registers in that order.
+# This is what I think the op codes should be.
+
+# Set up new stack frame (not sure why)
+55              # push   %rbp
+48 89 e5        # mov    %rsp,%rbp
+48 83 ec 10     # sub    $0x10,%rsp
+
+# Save args onto the stack (which we already grew to fit them)
+48 89 4D F8             # mov %rcx,-0x8(%rbp)
+48 89 55 F0             # mov %rdx,-0x10(%rbp)
+
+48 89 D0                # mov %rdx,%rax     # Move the EFI system table into %rax
+48 83 E8 28             # sub 0x28          # Subtract 40. Now %rax contains the address of the ConOut field. (*ConOut)
+48 89 C1                # mov %rax,%rcx     # Saving this value: SystemTable->ConOut argument to OutputString()
+48 8B 00                # mov (%rax),%rax   # Resolve the address in %rax (ConOut)
+48 83 E8 08             # sub 0x08          # subtract 8: Now %rax contains the address of the OutputString field. (*EFI_TEXT_OUTPUT_STRING)
+
+# The string is 0x2000 bytes before the instruction pointer, except the IP
+# points to the end of the instruction, which means that we also need to
+# subtract seven bytes for this instruction itself. That gives us the address of
+# the string. Load it into %rdx to become the second argument.
+48 8D 15 F9 DF FF FF    # lea $rip(-0x2007),%rdx
+
+FF E0                   # jmp %rax          # Execute OutputString()
+48 31 C0                # xor %rax,%rax     # Set %rax to 0
+c9                   	# leaveq
+c3                   	# retq   
+0f 1f 84 00 00 00 00 	# nopl   0x0(%rax,%rax,1)
+00
