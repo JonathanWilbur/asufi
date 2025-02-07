@@ -1,6 +1,7 @@
 # asufi - Assembler for UEFI
 
 - [ ] Stage 1: Hand-craft a UEFI Hello World executable
+  - [ ] Calculate the checksum (at offset 216)
 - [ ] Stage 2: Write a hex assembler
 - [ ] Stage 3: Write a hex++ assembler
 - [ ] Stage 4: Write an assembly assembler
@@ -59,3 +60,10 @@ Press ESC as soon as it boots up, and navigate to
 `Boot Manager` > `EFI Internal Shell`. At the shell prompt, type in `fs0:` to
 use the first (and only) EFI filesystem. Then run `hello.efi`. If you saw
 `Hello World!` on the screen, it succeeded.
+
+## Notes
+
+It seems like, from experience, the EFI shell _requires_ a `.reloc` section,
+even if you have no relocations. In this case you will still need to set the
+relocs stripped flag and create a `BASERELOC` directory entry, which may have
+a size of zero.

@@ -74,7 +74,7 @@ B8 00       # e_sp
 # };
 50 45 00 00     # mMagic
 64 86           # mMachine: X86-64
-02 00           # mNumberOfSections: Just .rdata and .text for now.
+03 00           # mNumberOfSections: Just .rdata and .text for now.
 00 00 00 00     # mTimeDateStamp: There's no need to be honest here.
 00 00 00 00     # mPointerToSymbolTable: no symbols (PE files I've seen use it though!)
 00 00 00 00     # mNumberOfSymbols: 0 symbols
@@ -133,7 +133,7 @@ F0 00           # mSizeOfOptionalHeader
 00 00       # mMinorSubsystemVersion
 00 00 00 00 # mWin32VersionValue
 00 40 00 00 # mSizeOfImage // FIXME: I am guessing 4 * 4K pages is correct?
-00 04 00 00 # mSizeOfHeaders (1024-byte headers) // FIXME: I think just 1 * 1024 bytes.
+00 02 00 00 # mSizeOfHeaders
 00 00 00 00 # mCheckSum: # TODO: I suspect this might matter after all.
 0a 00       # mSubsystem: EFI Application (10)
 00 00       # mDllCharacteristics
@@ -154,7 +154,7 @@ F0 00           # mSizeOfOptionalHeader
 00 00 00 00  00 00 00 00    # Resource Directory [.rsrc]
 00 00 00 00  00 00 00 00    # Exception Directory [.pdata]
 00 00 00 00  00 00 00 00    # Security Directory
-00 00 00 00  00 00 00 00    # Base Relocation Directory [.reloc]
+00 30 00 00  00 00 00 00    # Base Relocation Directory [.reloc]
 00 00 00 00  00 00 00 00    # Debug Directory
 00 00 00 00  00 00 00 00    # Description Directory
 00 00 00 00  00 00 00 00    # Special Directory
@@ -191,7 +191,7 @@ F0 00           # mSizeOfOptionalHeader
 00 00 00 00                 # mPointerToLinenumbers: Should be zeroed.
 00 00                       # mNumberOfRelocations: Should be zeroed.
 00 00                       # mNumberOfLinenumbers: Should be zeroed.
-20 00 00 60                 # mCharacteristics: IMAGE_SCN_CNT_CODE | IMAGE_SCN_MEM_EXECUTE | IIMAGE_SCN_MEM_READ
+20 00 00 60                 # mCharacteristics: IMAGE_SCN_CNT_CODE | IMAGE_SCN_MEM_EXECUTE | IMAGE_SCN_MEM_READ
 
 # .rdata header
 2e 72 64 61 74 61 00 00     # mName: ".rdata"
@@ -207,24 +207,24 @@ F0 00           # mSizeOfOptionalHeader
 
 # Commented out because I don't think I need any relocations for this to work.
 ## .reloc header
-# 2e 72 65 6c 6f 63 00 00     # mName: ".reloc"
-# 00 00 00 00                 # mVirtualSize: // FIXME: Apparently does need to be set.
-# 00 20 00 00                 # mVirtualAddress: I am pretty sure this should just be zeroed.
-# 00 00 00 00                 # mSizeOfRawData: // FIXME:
-# 00 00 00 00                 # mPointerToRawData: # FIXME: fill this in
-# 00 00 00 00                 # mPointerToRelocations: I think this can just be zeroed in this example.
-# 00 00 00 00                 # mPointerToLinenumbers: Should be zeroed.
-# 00 00                       # mNumberOfRelocations: Should be zeroed.
-# 00 00                       # mNumberOfLinenumbers: Should be zeroed.
-# 40 00 00 40                 # mCharacteristics: IMAGE_SCN_MEM_READ | IMAGE_SCN_CNT_INITIALIZED_DATA
+2e 72 65 6c 6f 63 00 00     # mName: ".reloc"
+00 00 00 00                 # mVirtualSize: // FIXME: Apparently does need to be set.
+00 20 00 00                 # mVirtualAddress: I am pretty sure this should just be zeroed.
+00 00 00 00                 # mSizeOfRawData: // FIXME:
+00 04 00 00                 # mPointerToRawData: # FIXME: fill this in
+00 00 00 00                 # mPointerToRelocations: I think this can just be zeroed in this example.
+00 00 00 00                 # mPointerToLinenumbers: Should be zeroed.
+00 00                       # mNumberOfRelocations: Should be zeroed.
+00 00                       # mNumberOfLinenumbers: Should be zeroed.
+40 00 00 42                 # mCharacteristics: IMAGE_SCN_MEM_READ | IMAGE_SCN_CNT_INITIALIZED_DATA | IMAGE_SCN_MEM_DISCARDABLE
 
 # This should be offset 392 + 80 = 472
 # 40 more bytes puts us at an offset of 512: what follows will now be sector-aligned.
-00 00 00 00 00 00 00 00
-00 00 00 00 00 00 00 00
-00 00 00 00 00 00 00 00
-00 00 00 00 00 00 00 00
-00 00 00 00 00 00 00 00
+#00 00 00 00 00 00 00 00
+#00 00 00 00 00 00 00 00
+#00 00 00 00 00 00 00 00
+#00 00 00 00 00 00 00 00
+#00 00 00 00 00 00 00 00
 
 # .rdata contents ("Hello World!\r\n" in UTF-16)
 00 48 00 65 00 6c 00 6c  00 6f 00 20 00 57 00 6f
@@ -309,14 +309,10 @@ F0 00           # mSizeOfOptionalHeader
 # Rcx, Rdx, R8, and R9 registers in that order.
 # This is what I think the op codes should be.
 
-48 31 C0                # xor %rax,%rax     # Set %rax to 0
-c9                   	# leaveq
-c3                   	# retq   
-
 # Set up new stack frame (not sure why)
-# 55              # push   %rbp
+55              # push   %rbp
 48 89 e5        # mov    %rsp,%rbp
-#48 83 ec 10     # sub    $0x10,%rsp
+48 83 ec 10     # sub    $0x10,%rsp
 
 # Save args onto the stack (which we already grew to fit them)
 48 89 4D F8             # mov %rcx,-0x8(%rbp)
