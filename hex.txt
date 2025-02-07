@@ -23,18 +23,18 @@
 # 64 Bytes: the DOS header
 # What follows are the typical values for these fields
 4D 5A       # e_magic
-00 00       # e_cblp
-00 00       # e_cp
+90 00       # e_cblp
+03 00       # e_cp
 00 00       # e_crlc
-00 04       # e_cparhdr
-00 10       # e_minalloc
+04 00       # e_cparhdr
+00 00       # e_minalloc
 FF FF       # e_maxalloc
 00 00       # e_ss
-00 B8       # e_sp
+B8 00       # e_sp
 00 00       # e_csum
 00 00       # e_ip
 00 00       # e_cs
-00 40       # e_lfarlc
+40 00       # e_lfarlc
 00 00       # e_ovno
 00 00       # e_res[0]
 00 00       # e_res[1]
@@ -74,12 +74,12 @@ FF FF       # e_maxalloc
 # };
 50 45 00 00     # mMagic
 64 86           # mMachine: X86-64
-02 00           # mNumberOfSections: Just .rodata and .text for now.
+02 00           # mNumberOfSections: Just .rdata and .text for now.
 00 00 00 00     # mTimeDateStamp: There's no need to be honest here.
 00 00 00 00     # mPointerToSymbolTable: no symbols (PE files I've seen use it though!)
 00 00 00 00     # mNumberOfSymbols: 0 symbols
 F0 00           # mSizeOfOptionalHeader
-06 02           # mCharacteristics: The important thing is the 02, meaning "executable"
+07 02           # mCharacteristics: The important thing is the 02, meaning "executable"
 
 # The optional PE header
 # typedef struct _IMAGE_OPTIONAL_HEADER64 {
@@ -122,7 +122,7 @@ F0 00           # mSizeOfOptionalHeader
 00 00 00 00 # mSizeOfUninitializedData
 00 30 00 00 # mAddressOfEntryPoint: Start of .text section.
 00 30 00 00 # mBaseOfCode: I think this is supposed to be the start of the .text section as well.
-00 00 00 00 00 00 00 00     # mImageBase FIXME!
+00 40 00 00 00 00 00 00 # mImageBase
 00 10 00 00 # mSectionAlignment: the default for this architecture of 4096
 00 02 00 00 # mFileAlignment: the default of 512
 00 00       # mMajorOperatingSystemVersion
@@ -133,10 +133,10 @@ F0 00           # mSizeOfOptionalHeader
 00 00       # mMinorSubsystemVersion
 00 00 00 00 # mWin32VersionValue
 00 40 00 00 # mSizeOfImage // FIXME: I am guessing 4 * 4K pages is correct?
-01 00 00 00 # mSizeOfHeaders (1024-byte headers) // FIXME: I think just 1 * 1024 bytes.
-09 87 01 00 # mCheckSum: I bet this is not checked.
+00 04 00 00 # mSizeOfHeaders (1024-byte headers) // FIXME: I think just 1 * 1024 bytes.
+00 00 00 00 # mCheckSum: # TODO: I suspect this might matter after all.
 0a 00       # mSubsystem: EFI Application (10)
-10 00       # mDllCharacteristics
+00 00       # mDllCharacteristics
 00 00 00 00 00 00 00 00     # mSizeOfStackReserve
 00 00 00 00 00 00 00 00     # mSizeOfStackCommit
 00 00 00 00 00 00 00 00     # mSizeOfHeapReserve
@@ -181,17 +181,29 @@ F0 00           # mSizeOfOptionalHeader
 
 # Offset 392
 
-# .rodata header
-2e 72 6f 64 61 74 61 00     # mName: ".rodata"
-20 00 00 00                 # mVirtualSize: 32 bytes
-00 10 00 00                 # mVirtualAddress
-20 00 00 00                 # mSizeOfRawData: 32
-d8 01 00 00                 # mPointerToRawData
+# .text header
+2e 74 65 78 74 00 00 00     # mName: ".text"
+00 10 00 00                 # mVirtualSize 
+00 30 00 00                 # mVirtualAddress
+37 00 00 00                 # mSizeOfRawData: 55
+00 04 00 00                 # mPointerToRawData
 00 00 00 00                 # mPointerToRelocations: I think this can just be zeroed in this example.
 00 00 00 00                 # mPointerToLinenumbers: Should be zeroed.
 00 00                       # mNumberOfRelocations: Should be zeroed.
 00 00                       # mNumberOfLinenumbers: Should be zeroed.
-00 00 00 40                 # mCharacteristics: only one flag set: IMAGE_SCN_MEM_READ
+20 00 00 60                 # mCharacteristics: IMAGE_SCN_CNT_CODE | IMAGE_SCN_MEM_EXECUTE | IIMAGE_SCN_MEM_READ
+
+# .rdata header
+2e 72 64 61 74 61 00 00     # mName: ".rdata"
+20 00 00 00                 # mVirtualSize: 32 bytes
+00 10 00 00                 # mVirtualAddress
+20 00 00 00                 # mSizeOfRawData: 32
+00 02 00 00                 # mPointerToRawData
+00 00 00 00                 # mPointerToRelocations: I think this can just be zeroed in this example.
+00 00 00 00                 # mPointerToLinenumbers: Should be zeroed.
+00 00                       # mNumberOfRelocations: Should be zeroed.
+00 00                       # mNumberOfLinenumbers: Should be zeroed.
+40 00 00 40                 # mCharacteristics: IMAGE_SCN_MEM_READ | IMAGE_SCN_CNT_INITIALIZED_DATA
 
 # Commented out because I don't think I need any relocations for this to work.
 ## .reloc header
@@ -204,28 +216,52 @@ d8 01 00 00                 # mPointerToRawData
 # 00 00 00 00                 # mPointerToLinenumbers: Should be zeroed.
 # 00 00                       # mNumberOfRelocations: Should be zeroed.
 # 00 00                       # mNumberOfLinenumbers: Should be zeroed.
-# 00 00 00 40                 # mCharacteristics: only one flag set: IMAGE_SCN_MEM_READ
-
-# // FIXME: EFI expects .text to be the first section.
-# .text header
-2e 74 65 78 74 00 00 00     # mName: ".text"
-00 10 00 00                 # mVirtualSize: 16 bytes # FIXME: This is not right.
-00 30 00 00                 # mVirtualAddress
-37 00 00 00                 # mSizeOfRawData: 55
-f8 01 00 00                 # mPointerToRawData: Start of .rodata content + 32.
-00 00 00 00                 # mPointerToRelocations: I think this can just be zeroed in this example.
-00 00 00 00                 # mPointerToLinenumbers: Should be zeroed.
-00 00                       # mNumberOfRelocations: Should be zeroed.
-00 00                       # mNumberOfLinenumbers: Should be zeroed.
-00 00 00 20                 # mCharacteristics: only one flag set: IMAGE_SCN_MEM_EXECUTE
+# 40 00 00 40                 # mCharacteristics: IMAGE_SCN_MEM_READ | IMAGE_SCN_CNT_INITIALIZED_DATA
 
 # This should be offset 392 + 80 = 472
+# 40 more bytes puts us at an offset of 512: what follows will now be sector-aligned.
+00 00 00 00 00 00 00 00
+00 00 00 00 00 00 00 00
+00 00 00 00 00 00 00 00
+00 00 00 00 00 00 00 00
+00 00 00 00 00 00 00 00
 
-# .rodata contents ("Hello World!\r\n" in UTF-16)
+# .rdata contents ("Hello World!\r\n" in UTF-16)
 00 48 00 65 00 6c 00 6c  00 6f 00 20 00 57 00 6f
 00 72 00 6c 00 64 00 21  00 0d 00 0a 00 00 00 00
 
-# This should be offset 392 + 80 + 32 = 504
+# This should be offset 512 + 32 = 544
+# Pad with 480 more bytes to get to 1024: what follows will now be sector-aligned.
+00 00 00 00 00 00 00 00  00 00 00 00 00 00 00 00
+00 00 00 00 00 00 00 00  00 00 00 00 00 00 00 00
+00 00 00 00 00 00 00 00  00 00 00 00 00 00 00 00
+00 00 00 00 00 00 00 00  00 00 00 00 00 00 00 00
+00 00 00 00 00 00 00 00  00 00 00 00 00 00 00 00
+00 00 00 00 00 00 00 00  00 00 00 00 00 00 00 00
+00 00 00 00 00 00 00 00  00 00 00 00 00 00 00 00
+00 00 00 00 00 00 00 00  00 00 00 00 00 00 00 00
+00 00 00 00 00 00 00 00  00 00 00 00 00 00 00 00
+00 00 00 00 00 00 00 00  00 00 00 00 00 00 00 00
+00 00 00 00 00 00 00 00  00 00 00 00 00 00 00 00
+00 00 00 00 00 00 00 00  00 00 00 00 00 00 00 00
+00 00 00 00 00 00 00 00  00 00 00 00 00 00 00 00
+00 00 00 00 00 00 00 00  00 00 00 00 00 00 00 00
+00 00 00 00 00 00 00 00  00 00 00 00 00 00 00 00
+00 00 00 00 00 00 00 00  00 00 00 00 00 00 00 00
+00 00 00 00 00 00 00 00  00 00 00 00 00 00 00 00
+00 00 00 00 00 00 00 00  00 00 00 00 00 00 00 00
+00 00 00 00 00 00 00 00  00 00 00 00 00 00 00 00
+00 00 00 00 00 00 00 00  00 00 00 00 00 00 00 00
+00 00 00 00 00 00 00 00  00 00 00 00 00 00 00 00
+00 00 00 00 00 00 00 00  00 00 00 00 00 00 00 00
+00 00 00 00 00 00 00 00  00 00 00 00 00 00 00 00
+00 00 00 00 00 00 00 00  00 00 00 00 00 00 00 00
+00 00 00 00 00 00 00 00  00 00 00 00 00 00 00 00
+00 00 00 00 00 00 00 00  00 00 00 00 00 00 00 00
+00 00 00 00 00 00 00 00  00 00 00 00 00 00 00 00
+00 00 00 00 00 00 00 00  00 00 00 00 00 00 00 00
+00 00 00 00 00 00 00 00  00 00 00 00 00 00 00 00
+00 00 00 00 00 00 00 00  00 00 00 00 00 00 00 00
 
 # .text contents (x86-64 bytecode)
 
@@ -273,10 +309,14 @@ f8 01 00 00                 # mPointerToRawData: Start of .rodata content + 32.
 # Rcx, Rdx, R8, and R9 registers in that order.
 # This is what I think the op codes should be.
 
+48 31 C0                # xor %rax,%rax     # Set %rax to 0
+c9                   	# leaveq
+c3                   	# retq   
+
 # Set up new stack frame (not sure why)
-55              # push   %rbp
+# 55              # push   %rbp
 48 89 e5        # mov    %rsp,%rbp
-48 83 ec 10     # sub    $0x10,%rsp
+#48 83 ec 10     # sub    $0x10,%rsp
 
 # Save args onto the stack (which we already grew to fit them)
 48 89 4D F8             # mov %rcx,-0x8(%rbp)
