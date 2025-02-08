@@ -68,3 +68,4 @@ relocs stripped flag and create a `BASERELOC` directory entry, which may have
 a size of zero.
 
 The checksum field does NOT have to be correct, at least on OVMF, it seems.
+
