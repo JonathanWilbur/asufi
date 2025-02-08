@@ -185,7 +185,7 @@ F0 00           # mSizeOfOptionalHeader
 2e 74 65 78 74 00 00 00     # mName: ".text"
 00 10 00 00                 # mVirtualSize 
 00 30 00 00                 # mVirtualAddress
-37 00 00 00                 # mSizeOfRawData: 55
+16 00 00 00                 # mSizeOfRawData: 22
 00 04 00 00                 # mPointerToRawData
 00 00 00 00                 # mPointerToRelocations: I think this can just be zeroed in this example.
 00 00 00 00                 # mPointerToLinenumbers: Should be zeroed.
@@ -208,23 +208,18 @@ F0 00           # mSizeOfOptionalHeader
 # Commented out because I don't think I need any relocations for this to work.
 ## .reloc header
 2e 72 65 6c 6f 63 00 00     # mName: ".reloc"
-00 00 00 00                 # mVirtualSize: // FIXME: Apparently does need to be set.
+00 00 00 00                 # mVirtualSize
 00 20 00 00                 # mVirtualAddress: I am pretty sure this should just be zeroed.
-00 00 00 00                 # mSizeOfRawData: // FIXME:
-00 04 00 00                 # mPointerToRawData: # FIXME: fill this in
+00 00 00 00                 # mSizeOfRawData
+00 04 00 00                 # mPointerToRawData
 00 00 00 00                 # mPointerToRelocations: I think this can just be zeroed in this example.
 00 00 00 00                 # mPointerToLinenumbers: Should be zeroed.
 00 00                       # mNumberOfRelocations: Should be zeroed.
 00 00                       # mNumberOfLinenumbers: Should be zeroed.
 40 00 00 42                 # mCharacteristics: IMAGE_SCN_MEM_READ | IMAGE_SCN_CNT_INITIALIZED_DATA | IMAGE_SCN_MEM_DISCARDABLE
 
-# This should be offset 392 + 80 = 472
-# 40 more bytes puts us at an offset of 512: what follows will now be sector-aligned.
-#00 00 00 00 00 00 00 00
-#00 00 00 00 00 00 00 00
-#00 00 00 00 00 00 00 00
-#00 00 00 00 00 00 00 00
-#00 00 00 00 00 00 00 00
+# Coincidentally, this current offset is 512, so we don't need any padding.
+# A section's contents can start immediately after this.
 
 # .rdata contents ("Hello World!\r\n" in UTF-16)
 00 48 00 65 00 6c 00 6c  00 6f 00 20 00 57 00 6f
@@ -264,75 +259,27 @@ F0 00           # mSizeOfOptionalHeader
 00 00 00 00 00 00 00 00  00 00 00 00 00 00 00 00
 
 # .text contents (x86-64 bytecode)
+# This basically does:
+#   SystemTable->ConOut->OutputString(SystemTable->ConOut, L"Hello World!\n");
+#   return EFI_SUCCESS;
+# SystemTable starts out in rdx.
 
-# typedef struct _EFI_TABLE_HEADER {
-#     UINT64                      Signature;
-#     UINT32                      Revision;
-#     UINT32                      HeaderSize;
-#     UINT32                      CRC32;
-#     UINT32                      Reserved;
-# } EFI_TABLE_HEADER;
+C8 20 00 00              # enter 0x20, 0
 
-# typedef struct _SIMPLE_TEXT_OUTPUT_INTERFACE {
-#     EFI_TEXT_RESET                  Reset; // pointer
-#     EFI_TEXT_OUTPUT_STRING          OutputString;
-#     EFI_TEXT_TEST_STRING            TestString;
-#     EFI_TEXT_QUERY_MODE             QueryMode;
-#     EFI_TEXT_SET_MODE               SetMode;
-#     EFI_TEXT_SET_ATTRIBUTE          SetAttribute;
-#     EFI_TEXT_CLEAR_SCREEN           ClearScreen;
-#     EFI_TEXT_SET_CURSOR_POSITION    SetCursorPosition;
-#     EFI_TEXT_ENABLE_CURSOR          EnableCursor;
-#     SIMPLE_TEXT_OUTPUT_MODE         *Mode;
-# } SIMPLE_TEXT_OUTPUT_INTERFACE, EFI_SIMPLE_TEXT_OUT_PROTOCOL;
-
-# typedef struct _EFI_SYSTEM_TABLE {
-#     EFI_TABLE_HEADER                Hdr; // 192 bits / 24 bytes
-#     CHAR16                          *FirmwareVendor; // 2 bytes
-#     UINT32                          FirmwareRevision; // 4 bytes
-#     EFI_HANDLE                      ConsoleInHandle; // 8 bytes
-#     SIMPLE_INPUT_INTERFACE          *ConIn; // 8 bytes
-#     EFI_HANDLE                      ConsoleOutHandle; // 8 bytes
-#     SIMPLE_TEXT_OUTPUT_INTERFACE    *ConOut; // 8 bytes
-#     EFI_HANDLE                      StandardErrorHandle;
-#     SIMPLE_TEXT_OUTPUT_INTERFACE    *StdErr;
-#     EFI_RUNTIME_SERVICES            *RuntimeServices;
-#     EFI_BOOT_SERVICES               *BootServices;
-#     UINTN                           NumberOfTableEntries;
-#     EFI_CONFIGURATION_TABLE         *ConfigurationTable;
-# } EFI_SYSTEM_TABLE;
-
-# SystemTable->ConOut->OutputString(SystemTable->ConOut, L"Hello World!\n");
-# return EFI_SUCCESS;
-
-# Calling Conventions: https://uefi.org/specs/UEFI/2.9_A/02_Overview.html#detailed-calling-conventions
-# Rcx, Rdx, R8, and R9 registers in that order.
-# This is what I think the op codes should be.
-
-# Set up new stack frame (not sure why)
-55              # push   %rbp
-48 89 e5        # mov    %rsp,%rbp
-48 83 ec 10     # sub    $0x10,%rsp
-
-# Save args onto the stack (which we already grew to fit them)
-48 89 4D F8             # mov %rcx,-0x8(%rbp)
-48 89 55 F0             # mov %rdx,-0x10(%rbp)
-
-48 89 D0                # mov %rdx,%rax     # Move the EFI system table into %rax
-48 83 E8 28             # sub 0x28          # Subtract 40. Now %rax contains the address of the ConOut field. (*ConOut)
-48 89 C1                # mov %rax,%rcx     # Saving this value: SystemTable->ConOut argument to OutputString()
-48 8B 00                # mov (%rax),%rax   # Resolve the address in %rax (ConOut)
-48 83 E8 08             # sub 0x08          # subtract 8: Now %rax contains the address of the OutputString field. (*EFI_TEXT_OUTPUT_STRING)
+# ConOut is 0x40 into the EFI system table structure.
+48 8B 4A 40              # mov rcx, [rdx + 0x40]    # EFI_SYSTEM_TABLE->ConOut
 
 # The string is 0x2000 bytes before the instruction pointer, except the IP
 # points to the end of the instruction, which means that we also need to
-# subtract seven bytes for this instruction itself. That gives us the address of
-# the string. Load it into %rdx to become the second argument.
-48 8D 15 F9 DF FF FF    # lea $rip(-0x2007),%rdx
+# subtract 15 bytes for this instruction and those that came before it.
+# That gives us the address of the string. Load it into %rdx to become the
+# second argument.
+48 8D 15 F2 DF FF FF     # lea rdx, [rip - 0x200E]
 
-FF E0                   # jmp %rax          # Execute OutputString()
-48 31 C0                # xor %rax,%rax     # Set %rax to 0
-c9                   	# leaveq
-c3                   	# retq   
-0f 1f 84 00 00 00 00 	# nopl   0x0(%rax,%rax,1)
-00
+# UEFI calling conventions mandate that rcx is the first argument, and rdx
+# stores the second. Now that we have placed those arguments in their registers,
+# we can call the OutputString() function.
+FF 51 08                 # call [rcx + 0x08]        # EFI_SIMPLE_OUTPUT_PROTOCOL->OutputString
+31 C0                    # xor eax, eax             # Set eax to 0.
+C9                       # leave
+C3                       # ret
