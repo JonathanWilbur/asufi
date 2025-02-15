@@ -1,7 +1,7 @@
 #!/bin/sh
 # This is only meant to work on my computer. I'll set up something nicer for you
 # if you need it.
-awk -F# '{print $1}' hex.txt | tr -d '[:space:]' | xxd -r -p > output.bin
+awk -F# '{print $1}' hex/hello.hex | tr -d '[:space:]' | xxd -r -p > output.bin
 dd if=/dev/zero of=fat.img bs=1M count=64
 mkfs.vfat fat.img
 sudo mkdir -p /mnt/fat

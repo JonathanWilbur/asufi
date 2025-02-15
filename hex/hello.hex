@@ -1,0 +1,771 @@
+# typedef struct _IMAGE_DOS_HEADER {      // MS-DOS EXE header
+#     WORD   e_magic;                     // Magic number: 0x5A4D or MZ
+#     WORD   e_cblp;                      // Bytes on last page of file
+#     WORD   e_cp;                        // Pages in file
+#     WORD   e_crlc;                      // Relocations
+#     WORD   e_cparhdr;                   // Size of header, in paragraphs
+#     WORD   e_minalloc;                  // Min - extra paragraphs needed
+#     WORD   e_maxalloc;                  // Max - extra paragraphs needed
+#     WORD   e_ss;                        // Initial (relative) SS value
+#     WORD   e_sp;                        // Initial SP value
+#     WORD   e_csum;                      // Checksum
+#     WORD   e_ip;                        // Initial IP value
+#     WORD   e_cs;                        // Initial (relative) CS value
+#     WORD   e_lfarlc;                    // File address of relocation table
+#     WORD   e_ovno;                      // Overlay number
+#     WORD   e_res[4];                    // Reserved words
+#     WORD   e_oemid;                     // OEM identifier
+#     WORD   e_oeminfo;                   // OEM information
+#     WORD   e_res2[10];                  // Reserved words
+#     LONG   e_lfanew;                    // Offset to NT header
+# } IMAGE_DOS_HEADER, *PIMAGE_DOS_HEADER;
+
+# 64 Bytes: the DOS header
+# What follows are the typical values for these fields
+4D 5A       # e_magic
+90 00       # e_cblp
+03 00       # e_cp
+00 00       # e_crlc
+04 00       # e_cparhdr
+00 00       # e_minalloc
+FF FF       # e_maxalloc
+00 00       # e_ss
+B8 00       # e_sp
+00 00       # e_csum
+00 00       # e_ip
+00 00       # e_cs
+40 00       # e_lfarlc
+00 00       # e_ovno
+00 00       # e_res[0]
+00 00       # e_res[1]
+00 00       # e_res[2]
+00 00       # e_res[3]
+00 00       # e_oemid
+00 00       # e_oeminfo
+00 00       # e_res2[0]
+00 00       # e_res2[1]
+00 00       # e_res2[2]
+00 00       # e_res2[3]
+00 00       # e_res2[4]
+00 00       # e_res2[5]
+00 00       # e_res2[6]
+00 00       # e_res2[7]
+00 00       # e_res2[8]
+00 00       # e_res2[9]
+80 00 00 00 # e_lfanew (0x80 = 128)
+
+# 64 bytes: the DOS stub code
+# It just prints "This program cannot be run in DOS mode" and exits.
+0E 1F BA 0E 00 B4 09 CD  21 B8 01 4C CD 21 54 68
+69 73 20 70 72 6F 67 72  61 6D 20 63 61 6E 6E 6F 
+74 20 62 65 20 72 75 6E  20 69 6E 20 44 4F 53 20 
+6D 6F 64 65 2E 0D 0D 0A  24 00 00 00 00 00 00 00
+
+# 24 Bytes: the COFF header
+# struct PeHeader {
+# 	uint32_t mMagic; // PE\0\0 or 0x00004550
+# 	uint16_t mMachine;
+# 	uint16_t mNumberOfSections;
+# 	uint32_t mTimeDateStamp;
+# 	uint32_t mPointerToSymbolTable;
+# 	uint32_t mNumberOfSymbols;
+# 	uint16_t mSizeOfOptionalHeader;
+# 	uint16_t mCharacteristics;
+# };
+50 45 00 00     # mMagic
+64 86           # mMachine: X86-64
+03 00           # mNumberOfSections: Just .rdata and .text for now.
+00 00 00 00     # mTimeDateStamp: There's no need to be honest here.
+00 00 00 00     # mPointerToSymbolTable: no symbols (PE files I've seen use it though!)
+00 00 00 00     # mNumberOfSymbols: 0 symbols
+F0 00           # mSizeOfOptionalHeader
+07 02           # mCharacteristics: The important thing is the 02, meaning "executable"
+
+# The optional PE header
+# typedef struct _IMAGE_OPTIONAL_HEADER64 {
+#     WORD        Magic;
+#     BYTE        MajorLinkerVersion;
+#     BYTE        MinorLinkerVersion;
+#     DWORD       SizeOfCode;
+#     DWORD       SizeOfInitializedData;
+#     DWORD       SizeOfUninitializedData;
+#     DWORD       AddressOfEntryPoint;
+#     DWORD       BaseOfCode;
+#     ULONGLONG   ImageBase;
+#     DWORD       SectionAlignment;
+#     DWORD       FileAlignment;
+#     WORD        MajorOperatingSystemVersion;
+#     WORD        MinorOperatingSystemVersion;
+#     WORD        MajorImageVersion;
+#     WORD        MinorImageVersion;
+#     WORD        MajorSubsystemVersion;
+#     WORD        MinorSubsystemVersion;
+#     DWORD       Win32VersionValue;
+#     DWORD       SizeOfImage;
+#     DWORD       SizeOfHeaders;
+#     DWORD       CheckSum;
+#     WORD        Subsystem;
+#     WORD        DllCharacteristics;
+#     ULONGLONG   SizeOfStackReserve;
+#     ULONGLONG   SizeOfStackCommit;
+#     ULONGLONG   SizeOfHeapReserve;
+#     ULONGLONG   SizeOfHeapCommit;
+#     DWORD       LoaderFlags;
+#     DWORD       NumberOfRvaAndSizes;
+#     IMAGE_DATA_DIRECTORY DataDirectory[IMAGE_NUMBEROF_DIRECTORY_ENTRIES];
+# } IMAGE_OPTIONAL_HEADER64, *PIMAGE_OPTIONAL_HEADER64;
+0b 02       # PE32+ (64 bit)
+02          # mMajorLinkerVersion: I've seen this value, but IDK why.
+22          # mMinorLinkerVersion: I've seen this value, but IDK why.
+00 10 00 00 # mSizeOfCode // TODO: I'm just guessing overshooting it to 4096 will be fine...
+00 10 00 00 # mSizeOfInitializedData // TODO: I'm just guessing overshooting it to 4096 will be fine...
+00 00 00 00 # mSizeOfUninitializedData
+00 30 00 00 # mAddressOfEntryPoint: Start of .text section.
+00 30 00 00 # mBaseOfCode: I think this is supposed to be the start of the .text section as well.
+00 40 00 00 00 00 00 00 # mImageBase
+00 10 00 00 # mSectionAlignment: the default for this architecture of 4096
+00 02 00 00 # mFileAlignment: the default of 512
+00 00       # mMajorOperatingSystemVersion
+00 00       # mMinorOperatingSystemVersion
+00 00       # mMajorImageVersion
+00 00       # mMinorImageVersion
+00 00       # mMajorSubsystemVersion
+00 00       # mMinorSubsystemVersion
+00 00 00 00 # mWin32VersionValue
+00 40 00 00 # mSizeOfImage // FIXME: I am guessing 4 * 4K pages is correct?
+00 02 00 00 # mSizeOfHeaders
+00 00 00 00 # mCheckSum: # TODO: I suspect this might matter after all.
+0a 00       # mSubsystem: EFI Application (10)
+00 00       # mDllCharacteristics
+00 00 00 00 00 00 00 00     # mSizeOfStackReserve
+00 00 00 00 00 00 00 00     # mSizeOfStackCommit
+00 00 00 00 00 00 00 00     # mSizeOfHeapReserve
+00 00 00 00 00 00 00 00     # mSizeOfHeapCommit
+00 00 00 00 # mLoaderFlags
+10 00 00 00 # mNumberOfRvaAndSizes (16 of them)
+
+# The Data Directory
+# typedef struct _IMAGE_DATA_DIRECTORY {
+#     DWORD   VirtualAddress;
+#     DWORD   Size;
+# } IMAGE_DATA_DIRECTORY, *PIMAGE_DATA_DIRECTORY;
+00 00 00 00  00 00 00 00    # Export Directory [.edata (or where ever we found it)]
+00 00 00 00  00 00 00 00    # Import Directory [parts of .idata]
+00 00 00 00  00 00 00 00    # Resource Directory [.rsrc]
+00 00 00 00  00 00 00 00    # Exception Directory [.pdata]
+00 00 00 00  00 00 00 00    # Security Directory
+00 30 00 00  00 00 00 00    # Base Relocation Directory [.reloc]
+00 00 00 00  00 00 00 00    # Debug Directory
+00 00 00 00  00 00 00 00    # Description Directory
+00 00 00 00  00 00 00 00    # Special Directory
+00 00 00 00  00 00 00 00    # Thread Storage Directory [.tls]
+00 00 00 00  00 00 00 00    # Load Configuration Directory
+00 00 00 00  00 00 00 00    # Bound Import Directory
+00 00 00 00  00 00 00 00    # Import Address Table Directory
+00 00 00 00  00 00 00 00    # Delay Import Directory
+00 00 00 00  00 00 00 00    # CLR Runtime Header
+00 00 00 00  00 00 00 00    # Reserved
+
+# struct IMAGE_SECTION_HEADER { // size 40 bytes
+# 	char[8]  mName;
+# 	uint32_t mVirtualSize;
+# 	uint32_t mVirtualAddress;
+# 	uint32_t mSizeOfRawData;
+# 	uint32_t mPointerToRawData;
+# 	uint32_t mPointerToRelocations;
+# 	uint32_t mPointerToLinenumbers;
+# 	uint16_t mNumberOfRelocations;
+# 	uint16_t mNumberOfLinenumbers;
+# 	uint32_t mCharacteristics;
+# };
+
+# Offset 392
+
+# .text header
+2e 74 65 78 74 00 00 00     # mName: ".text"
+00 10 00 00                 # mVirtualSize 
+00 30 00 00                 # mVirtualAddress
+00 04 00 00                 # mSizeOfRawData: hard-coded to 1024 bytes so we never need to change 
+00 04 00 00                 # mPointerToRawData
+00 00 00 00                 # mPointerToRelocations: I think this can just be zeroed in this example.
+00 00 00 00                 # mPointerToLinenumbers: Should be zeroed.
+00 00                       # mNumberOfRelocations: Should be zeroed.
+00 00                       # mNumberOfLinenumbers: Should be zeroed.
+20 00 00 60                 # mCharacteristics: IMAGE_SCN_CNT_CODE | IMAGE_SCN_MEM_EXECUTE | IMAGE_SCN_MEM_READ
+
+# .rdata header
+2e 72 64 61 74 61 00 00     # mName: ".rdata"
+20 00 00 00                 # mVirtualSize: 32 bytes
+00 10 00 00                 # mVirtualAddress
+20 00 00 00                 # mSizeOfRawData: 32
+00 02 00 00                 # mPointerToRawData
+00 00 00 00                 # mPointerToRelocations: I think this can just be zeroed in this example.
+00 00 00 00                 # mPointerToLinenumbers: Should be zeroed.
+00 00                       # mNumberOfRelocations: Should be zeroed.
+00 00                       # mNumberOfLinenumbers: Should be zeroed.
+40 00 00 40                 # mCharacteristics: IMAGE_SCN_MEM_READ | IMAGE_SCN_CNT_INITIALIZED_DATA
+
+# Commented out because I don't think I need any relocations for this to work.
+## .reloc header
+2e 72 65 6c 6f 63 00 00     # mName: ".reloc"
+00 00 00 00                 # mVirtualSize
+00 20 00 00                 # mVirtualAddress: I am pretty sure this should just be zeroed.
+00 00 00 00                 # mSizeOfRawData
+00 04 00 00                 # mPointerToRawData
+00 00 00 00                 # mPointerToRelocations: I think this can just be zeroed in this example.
+00 00 00 00                 # mPointerToLinenumbers: Should be zeroed.
+00 00                       # mNumberOfRelocations: Should be zeroed.
+00 00                       # mNumberOfLinenumbers: Should be zeroed.
+40 00 00 42                 # mCharacteristics: IMAGE_SCN_MEM_READ | IMAGE_SCN_CNT_INITIALIZED_DATA | IMAGE_SCN_MEM_DISCARDABLE
+
+# Coincidentally, this current offset is 512, so we don't need any padding.
+# A section's contents can start immediately after this.
+
+# .rdata contents ("Hello World!\r\n" in UTF-16)
+00 48 00 65 00 6c 00 6c  00 6f 00 20 00 57 00 6f
+00 72 00 6c 00 64 00 21  00 0d 00 0a 00 00 00 00
+
+# This should be offset 512 + 32 = 544
+# Pad with 480 more bytes to get to 1024: what follows will now be sector-aligned.
+00 00 00 00 00 00 00 00  00 00 00 00 00 00 00 00
+00 00 00 00 00 00 00 00  00 00 00 00 00 00 00 00
+00 00 00 00 00 00 00 00  00 00 00 00 00 00 00 00
+00 00 00 00 00 00 00 00  00 00 00 00 00 00 00 00
+00 00 00 00 00 00 00 00  00 00 00 00 00 00 00 00
+00 00 00 00 00 00 00 00  00 00 00 00 00 00 00 00
+00 00 00 00 00 00 00 00  00 00 00 00 00 00 00 00
+00 00 00 00 00 00 00 00  00 00 00 00 00 00 00 00
+00 00 00 00 00 00 00 00  00 00 00 00 00 00 00 00
+00 00 00 00 00 00 00 00  00 00 00 00 00 00 00 00
+00 00 00 00 00 00 00 00  00 00 00 00 00 00 00 00
+00 00 00 00 00 00 00 00  00 00 00 00 00 00 00 00
+00 00 00 00 00 00 00 00  00 00 00 00 00 00 00 00
+00 00 00 00 00 00 00 00  00 00 00 00 00 00 00 00
+00 00 00 00 00 00 00 00  00 00 00 00 00 00 00 00
+00 00 00 00 00 00 00 00  00 00 00 00 00 00 00 00
+00 00 00 00 00 00 00 00  00 00 00 00 00 00 00 00
+00 00 00 00 00 00 00 00  00 00 00 00 00 00 00 00
+00 00 00 00 00 00 00 00  00 00 00 00 00 00 00 00
+00 00 00 00 00 00 00 00  00 00 00 00 00 00 00 00
+00 00 00 00 00 00 00 00  00 00 00 00 00 00 00 00
+00 00 00 00 00 00 00 00  00 00 00 00 00 00 00 00
+00 00 00 00 00 00 00 00  00 00 00 00 00 00 00 00
+00 00 00 00 00 00 00 00  00 00 00 00 00 00 00 00
+00 00 00 00 00 00 00 00  00 00 00 00 00 00 00 00
+00 00 00 00 00 00 00 00  00 00 00 00 00 00 00 00
+00 00 00 00 00 00 00 00  00 00 00 00 00 00 00 00
+00 00 00 00 00 00 00 00  00 00 00 00 00 00 00 00
+00 00 00 00 00 00 00 00  00 00 00 00 00 00 00 00
+00 00 00 00 00 00 00 00  00 00 00 00 00 00 00 00
+
+# .text contents (x86-64 bytecode)
+# This basically does:
+#   SystemTable->ConOut->OutputString(SystemTable->ConOut, L"Hello World!\n");
+#   return EFI_SUCCESS;
+# SystemTable starts out in rdx.
+C8200000 			# enter 0x20,0x0         offset 00000000 	:
+488B4A40 			# mov rcx,[rdx+0x40]         offset 00000004 	:
+488D1500000000 			# lea rdx,[rel 0xf]        offset 00000008 	:
+4881EA0E200000 			# sub rdx,0x200e         offset 0000000F 	:
+FF5108 			# call [rcx+0x8]         offset 00000016 	:
+31C0 			# xor eax,eax         offset 00000019 	:
+C9 			# leave          offset 0000001B 	:
+C3 			# ret          offset 0000001C 	:
+0000 			# add [rax],al         offset 0000001D 	:
+0000 			# add [rax],al         offset 0000001F 	:
+0000 			# add [rax],al         offset 00000021 	:
+0000 			# add [rax],al         offset 00000023 	:
+0000 			# add [rax],al         offset 00000025 	:
+0000 			# add [rax],al         offset 00000027 	:
+0000 			# add [rax],al         offset 00000029 	:
+0000 			# add [rax],al         offset 0000002B 	:
+0000 			# add [rax],al         offset 0000002D 	:
+0000 			# add [rax],al         offset 0000002F 	:
+0000 			# add [rax],al         offset 00000031 	:
+0000 			# add [rax],al         offset 00000033 	:
+0000 			# add [rax],al         offset 00000035 	:
+0000 			# add [rax],al         offset 00000037 	:
+0000 			# add [rax],al         offset 00000039 	:
+0000 			# add [rax],al         offset 0000003B 	:
+0000 			# add [rax],al         offset 0000003D 	:
+0000 			# add [rax],al         offset 0000003F 	:
+0000 			# add [rax],al         offset 00000041 	:
+0000 			# add [rax],al         offset 00000043 	:
+0000 			# add [rax],al         offset 00000045 	:
+0000 			# add [rax],al         offset 00000047 	:
+0000 			# add [rax],al         offset 00000049 	:
+0000 			# add [rax],al         offset 0000004B 	:
+0000 			# add [rax],al         offset 0000004D 	:
+0000 			# add [rax],al         offset 0000004F 	:
+0000 			# add [rax],al         offset 00000051 	:
+0000 			# add [rax],al         offset 00000053 	:
+0000 			# add [rax],al         offset 00000055 	:
+0000 			# add [rax],al         offset 00000057 	:
+0000 			# add [rax],al         offset 00000059 	:
+0000 			# add [rax],al         offset 0000005B 	:
+0000 			# add [rax],al         offset 0000005D 	:
+0000 			# add [rax],al         offset 0000005F 	:
+0000 			# add [rax],al         offset 00000061 	:
+0000 			# add [rax],al         offset 00000063 	:
+0000 			# add [rax],al         offset 00000065 	:
+0000 			# add [rax],al         offset 00000067 	:
+0000 			# add [rax],al         offset 00000069 	:
+0000 			# add [rax],al         offset 0000006B 	:
+0000 			# add [rax],al         offset 0000006D 	:
+0000 			# add [rax],al         offset 0000006F 	:
+0000 			# add [rax],al         offset 00000071 	:
+0000 			# add [rax],al         offset 00000073 	:
+0000 			# add [rax],al         offset 00000075 	:
+0000 			# add [rax],al         offset 00000077 	:
+0000 			# add [rax],al         offset 00000079 	:
+0000 			# add [rax],al         offset 0000007B 	:
+0000 			# add [rax],al         offset 0000007D 	:
+0000 			# add [rax],al         offset 0000007F 	:
+0000 			# add [rax],al         offset 00000081 	:
+0000 			# add [rax],al         offset 00000083 	:
+0000 			# add [rax],al         offset 00000085 	:
+0000 			# add [rax],al         offset 00000087 	:
+0000 			# add [rax],al         offset 00000089 	:
+0000 			# add [rax],al         offset 0000008B 	:
+0000 			# add [rax],al         offset 0000008D 	:
+0000 			# add [rax],al         offset 0000008F 	:
+0000 			# add [rax],al         offset 00000091 	:
+0000 			# add [rax],al         offset 00000093 	:
+0000 			# add [rax],al         offset 00000095 	:
+0000 			# add [rax],al         offset 00000097 	:
+0000 			# add [rax],al         offset 00000099 	:
+0000 			# add [rax],al         offset 0000009B 	:
+0000 			# add [rax],al         offset 0000009D 	:
+0000 			# add [rax],al         offset 0000009F 	:
+0000 			# add [rax],al         offset 000000A1 	:
+0000 			# add [rax],al         offset 000000A3 	:
+0000 			# add [rax],al         offset 000000A5 	:
+0000 			# add [rax],al         offset 000000A7 	:
+0000 			# add [rax],al         offset 000000A9 	:
+0000 			# add [rax],al         offset 000000AB 	:
+0000 			# add [rax],al         offset 000000AD 	:
+0000 			# add [rax],al         offset 000000AF 	:
+0000 			# add [rax],al         offset 000000B1 	:
+0000 			# add [rax],al         offset 000000B3 	:
+0000 			# add [rax],al         offset 000000B5 	:
+0000 			# add [rax],al         offset 000000B7 	:
+0000 			# add [rax],al         offset 000000B9 	:
+0000 			# add [rax],al         offset 000000BB 	:
+0000 			# add [rax],al         offset 000000BD 	:
+0000 			# add [rax],al         offset 000000BF 	:
+0000 			# add [rax],al         offset 000000C1 	:
+0000 			# add [rax],al         offset 000000C3 	:
+0000 			# add [rax],al         offset 000000C5 	:
+0000 			# add [rax],al         offset 000000C7 	:
+0000 			# add [rax],al         offset 000000C9 	:
+0000 			# add [rax],al         offset 000000CB 	:
+0000 			# add [rax],al         offset 000000CD 	:
+0000 			# add [rax],al         offset 000000CF 	:
+0000 			# add [rax],al         offset 000000D1 	:
+0000 			# add [rax],al         offset 000000D3 	:
+0000 			# add [rax],al         offset 000000D5 	:
+0000 			# add [rax],al         offset 000000D7 	:
+0000 			# add [rax],al         offset 000000D9 	:
+0000 			# add [rax],al         offset 000000DB 	:
+0000 			# add [rax],al         offset 000000DD 	:
+0000 			# add [rax],al         offset 000000DF 	:
+0000 			# add [rax],al         offset 000000E1 	:
+0000 			# add [rax],al         offset 000000E3 	:
+0000 			# add [rax],al         offset 000000E5 	:
+0000 			# add [rax],al         offset 000000E7 	:
+0000 			# add [rax],al         offset 000000E9 	:
+0000 			# add [rax],al         offset 000000EB 	:
+0000 			# add [rax],al         offset 000000ED 	:
+0000 			# add [rax],al         offset 000000EF 	:
+0000 			# add [rax],al         offset 000000F1 	:
+0000 			# add [rax],al         offset 000000F3 	:
+0000 			# add [rax],al         offset 000000F5 	:
+0000 			# add [rax],al         offset 000000F7 	:
+0000 			# add [rax],al         offset 000000F9 	:
+0000 			# add [rax],al         offset 000000FB 	:
+0000 			# add [rax],al         offset 000000FD 	:
+0000 			# add [rax],al         offset 000000FF 	:
+0000 			# add [rax],al         offset 00000101 	:
+0000 			# add [rax],al         offset 00000103 	:
+0000 			# add [rax],al         offset 00000105 	:
+0000 			# add [rax],al         offset 00000107 	:
+0000 			# add [rax],al         offset 00000109 	:
+0000 			# add [rax],al         offset 0000010B 	:
+0000 			# add [rax],al         offset 0000010D 	:
+0000 			# add [rax],al         offset 0000010F 	:
+0000 			# add [rax],al         offset 00000111 	:
+0000 			# add [rax],al         offset 00000113 	:
+0000 			# add [rax],al         offset 00000115 	:
+0000 			# add [rax],al         offset 00000117 	:
+0000 			# add [rax],al         offset 00000119 	:
+0000 			# add [rax],al         offset 0000011B 	:
+0000 			# add [rax],al         offset 0000011D 	:
+0000 			# add [rax],al         offset 0000011F 	:
+0000 			# add [rax],al         offset 00000121 	:
+0000 			# add [rax],al         offset 00000123 	:
+0000 			# add [rax],al         offset 00000125 	:
+0000 			# add [rax],al         offset 00000127 	:
+0000 			# add [rax],al         offset 00000129 	:
+0000 			# add [rax],al         offset 0000012B 	:
+0000 			# add [rax],al         offset 0000012D 	:
+0000 			# add [rax],al         offset 0000012F 	:
+0000 			# add [rax],al         offset 00000131 	:
+0000 			# add [rax],al         offset 00000133 	:
+0000 			# add [rax],al         offset 00000135 	:
+0000 			# add [rax],al         offset 00000137 	:
+0000 			# add [rax],al         offset 00000139 	:
+0000 			# add [rax],al         offset 0000013B 	:
+0000 			# add [rax],al         offset 0000013D 	:
+0000 			# add [rax],al         offset 0000013F 	:
+0000 			# add [rax],al         offset 00000141 	:
+0000 			# add [rax],al         offset 00000143 	:
+0000 			# add [rax],al         offset 00000145 	:
+0000 			# add [rax],al         offset 00000147 	:
+0000 			# add [rax],al         offset 00000149 	:
+0000 			# add [rax],al         offset 0000014B 	:
+0000 			# add [rax],al         offset 0000014D 	:
+0000 			# add [rax],al         offset 0000014F 	:
+0000 			# add [rax],al         offset 00000151 	:
+0000 			# add [rax],al         offset 00000153 	:
+0000 			# add [rax],al         offset 00000155 	:
+0000 			# add [rax],al         offset 00000157 	:
+0000 			# add [rax],al         offset 00000159 	:
+0000 			# add [rax],al         offset 0000015B 	:
+0000 			# add [rax],al         offset 0000015D 	:
+0000 			# add [rax],al         offset 0000015F 	:
+0000 			# add [rax],al         offset 00000161 	:
+0000 			# add [rax],al         offset 00000163 	:
+0000 			# add [rax],al         offset 00000165 	:
+0000 			# add [rax],al         offset 00000167 	:
+0000 			# add [rax],al         offset 00000169 	:
+0000 			# add [rax],al         offset 0000016B 	:
+0000 			# add [rax],al         offset 0000016D 	:
+0000 			# add [rax],al         offset 0000016F 	:
+0000 			# add [rax],al         offset 00000171 	:
+0000 			# add [rax],al         offset 00000173 	:
+0000 			# add [rax],al         offset 00000175 	:
+0000 			# add [rax],al         offset 00000177 	:
+0000 			# add [rax],al         offset 00000179 	:
+0000 			# add [rax],al         offset 0000017B 	:
+0000 			# add [rax],al         offset 0000017D 	:
+0000 			# add [rax],al         offset 0000017F 	:
+0000 			# add [rax],al         offset 00000181 	:
+0000 			# add [rax],al         offset 00000183 	:
+0000 			# add [rax],al         offset 00000185 	:
+0000 			# add [rax],al         offset 00000187 	:
+0000 			# add [rax],al         offset 00000189 	:
+0000 			# add [rax],al         offset 0000018B 	:
+0000 			# add [rax],al         offset 0000018D 	:
+0000 			# add [rax],al         offset 0000018F 	:
+0000 			# add [rax],al         offset 00000191 	:
+0000 			# add [rax],al         offset 00000193 	:
+0000 			# add [rax],al         offset 00000195 	:
+0000 			# add [rax],al         offset 00000197 	:
+0000 			# add [rax],al         offset 00000199 	:
+0000 			# add [rax],al         offset 0000019B 	:
+0000 			# add [rax],al         offset 0000019D 	:
+0000 			# add [rax],al         offset 0000019F 	:
+0000 			# add [rax],al         offset 000001A1 	:
+0000 			# add [rax],al         offset 000001A3 	:
+0000 			# add [rax],al         offset 000001A5 	:
+0000 			# add [rax],al         offset 000001A7 	:
+0000 			# add [rax],al         offset 000001A9 	:
+0000 			# add [rax],al         offset 000001AB 	:
+0000 			# add [rax],al         offset 000001AD 	:
+0000 			# add [rax],al         offset 000001AF 	:
+0000 			# add [rax],al         offset 000001B1 	:
+0000 			# add [rax],al         offset 000001B3 	:
+0000 			# add [rax],al         offset 000001B5 	:
+0000 			# add [rax],al         offset 000001B7 	:
+0000 			# add [rax],al         offset 000001B9 	:
+0000 			# add [rax],al         offset 000001BB 	:
+0000 			# add [rax],al         offset 000001BD 	:
+0000 			# add [rax],al         offset 000001BF 	:
+0000 			# add [rax],al         offset 000001C1 	:
+0000 			# add [rax],al         offset 000001C3 	:
+0000 			# add [rax],al         offset 000001C5 	:
+0000 			# add [rax],al         offset 000001C7 	:
+0000 			# add [rax],al         offset 000001C9 	:
+0000 			# add [rax],al         offset 000001CB 	:
+0000 			# add [rax],al         offset 000001CD 	:
+0000 			# add [rax],al         offset 000001CF 	:
+0000 			# add [rax],al         offset 000001D1 	:
+0000 			# add [rax],al         offset 000001D3 	:
+0000 			# add [rax],al         offset 000001D5 	:
+0000 			# add [rax],al         offset 000001D7 	:
+0000 			# add [rax],al         offset 000001D9 	:
+0000 			# add [rax],al         offset 000001DB 	:
+0000 			# add [rax],al         offset 000001DD 	:
+0000 			# add [rax],al         offset 000001DF 	:
+0000 			# add [rax],al         offset 000001E1 	:
+0000 			# add [rax],al         offset 000001E3 	:
+0000 			# add [rax],al         offset 000001E5 	:
+0000 			# add [rax],al         offset 000001E7 	:
+0000 			# add [rax],al         offset 000001E9 	:
+0000 			# add [rax],al         offset 000001EB 	:
+0000 			# add [rax],al         offset 000001ED 	:
+0000 			# add [rax],al         offset 000001EF 	:
+0000 			# add [rax],al         offset 000001F1 	:
+0000 			# add [rax],al         offset 000001F3 	:
+0000 			# add [rax],al         offset 000001F5 	:
+0000 			# add [rax],al         offset 000001F7 	:
+0000 			# add [rax],al         offset 000001F9 	:
+0000 			# add [rax],al         offset 000001FB 	:
+0000 			# add [rax],al         offset 000001FD 	:
+0000 			# add [rax],al         offset 000001FF 	:
+0000 			# add [rax],al         offset 00000201 	:
+0000 			# add [rax],al         offset 00000203 	:
+0000 			# add [rax],al         offset 00000205 	:
+0000 			# add [rax],al         offset 00000207 	:
+0000 			# add [rax],al         offset 00000209 	:
+0000 			# add [rax],al         offset 0000020B 	:
+0000 			# add [rax],al         offset 0000020D 	:
+0000 			# add [rax],al         offset 0000020F 	:
+0000 			# add [rax],al         offset 00000211 	:
+0000 			# add [rax],al         offset 00000213 	:
+0000 			# add [rax],al         offset 00000215 	:
+0000 			# add [rax],al         offset 00000217 	:
+0000 			# add [rax],al         offset 00000219 	:
+0000 			# add [rax],al         offset 0000021B 	:
+0000 			# add [rax],al         offset 0000021D 	:
+0000 			# add [rax],al         offset 0000021F 	:
+0000 			# add [rax],al         offset 00000221 	:
+0000 			# add [rax],al         offset 00000223 	:
+0000 			# add [rax],al         offset 00000225 	:
+0000 			# add [rax],al         offset 00000227 	:
+0000 			# add [rax],al         offset 00000229 	:
+0000 			# add [rax],al         offset 0000022B 	:
+0000 			# add [rax],al         offset 0000022D 	:
+0000 			# add [rax],al         offset 0000022F 	:
+0000 			# add [rax],al         offset 00000231 	:
+0000 			# add [rax],al         offset 00000233 	:
+0000 			# add [rax],al         offset 00000235 	:
+0000 			# add [rax],al         offset 00000237 	:
+0000 			# add [rax],al         offset 00000239 	:
+0000 			# add [rax],al         offset 0000023B 	:
+0000 			# add [rax],al         offset 0000023D 	:
+0000 			# add [rax],al         offset 0000023F 	:
+0000 			# add [rax],al         offset 00000241 	:
+0000 			# add [rax],al         offset 00000243 	:
+0000 			# add [rax],al         offset 00000245 	:
+0000 			# add [rax],al         offset 00000247 	:
+0000 			# add [rax],al         offset 00000249 	:
+0000 			# add [rax],al         offset 0000024B 	:
+0000 			# add [rax],al         offset 0000024D 	:
+0000 			# add [rax],al         offset 0000024F 	:
+0000 			# add [rax],al         offset 00000251 	:
+0000 			# add [rax],al         offset 00000253 	:
+0000 			# add [rax],al         offset 00000255 	:
+0000 			# add [rax],al         offset 00000257 	:
+0000 			# add [rax],al         offset 00000259 	:
+0000 			# add [rax],al         offset 0000025B 	:
+0000 			# add [rax],al         offset 0000025D 	:
+0000 			# add [rax],al         offset 0000025F 	:
+0000 			# add [rax],al         offset 00000261 	:
+0000 			# add [rax],al         offset 00000263 	:
+0000 			# add [rax],al         offset 00000265 	:
+0000 			# add [rax],al         offset 00000267 	:
+0000 			# add [rax],al         offset 00000269 	:
+0000 			# add [rax],al         offset 0000026B 	:
+0000 			# add [rax],al         offset 0000026D 	:
+0000 			# add [rax],al         offset 0000026F 	:
+0000 			# add [rax],al         offset 00000271 	:
+0000 			# add [rax],al         offset 00000273 	:
+0000 			# add [rax],al         offset 00000275 	:
+0000 			# add [rax],al         offset 00000277 	:
+0000 			# add [rax],al         offset 00000279 	:
+0000 			# add [rax],al         offset 0000027B 	:
+0000 			# add [rax],al         offset 0000027D 	:
+0000 			# add [rax],al         offset 0000027F 	:
+0000 			# add [rax],al         offset 00000281 	:
+0000 			# add [rax],al         offset 00000283 	:
+0000 			# add [rax],al         offset 00000285 	:
+0000 			# add [rax],al         offset 00000287 	:
+0000 			# add [rax],al         offset 00000289 	:
+0000 			# add [rax],al         offset 0000028B 	:
+0000 			# add [rax],al         offset 0000028D 	:
+0000 			# add [rax],al         offset 0000028F 	:
+0000 			# add [rax],al         offset 00000291 	:
+0000 			# add [rax],al         offset 00000293 	:
+0000 			# add [rax],al         offset 00000295 	:
+0000 			# add [rax],al         offset 00000297 	:
+0000 			# add [rax],al         offset 00000299 	:
+0000 			# add [rax],al         offset 0000029B 	:
+0000 			# add [rax],al         offset 0000029D 	:
+0000 			# add [rax],al         offset 0000029F 	:
+0000 			# add [rax],al         offset 000002A1 	:
+0000 			# add [rax],al         offset 000002A3 	:
+0000 			# add [rax],al         offset 000002A5 	:
+0000 			# add [rax],al         offset 000002A7 	:
+0000 			# add [rax],al         offset 000002A9 	:
+0000 			# add [rax],al         offset 000002AB 	:
+0000 			# add [rax],al         offset 000002AD 	:
+0000 			# add [rax],al         offset 000002AF 	:
+0000 			# add [rax],al         offset 000002B1 	:
+0000 			# add [rax],al         offset 000002B3 	:
+0000 			# add [rax],al         offset 000002B5 	:
+0000 			# add [rax],al         offset 000002B7 	:
+0000 			# add [rax],al         offset 000002B9 	:
+0000 			# add [rax],al         offset 000002BB 	:
+0000 			# add [rax],al         offset 000002BD 	:
+0000 			# add [rax],al         offset 000002BF 	:
+0000 			# add [rax],al         offset 000002C1 	:
+0000 			# add [rax],al         offset 000002C3 	:
+0000 			# add [rax],al         offset 000002C5 	:
+0000 			# add [rax],al         offset 000002C7 	:
+0000 			# add [rax],al         offset 000002C9 	:
+0000 			# add [rax],al         offset 000002CB 	:
+0000 			# add [rax],al         offset 000002CD 	:
+0000 			# add [rax],al         offset 000002CF 	:
+0000 			# add [rax],al         offset 000002D1 	:
+0000 			# add [rax],al         offset 000002D3 	:
+0000 			# add [rax],al         offset 000002D5 	:
+0000 			# add [rax],al         offset 000002D7 	:
+0000 			# add [rax],al         offset 000002D9 	:
+0000 			# add [rax],al         offset 000002DB 	:
+0000 			# add [rax],al         offset 000002DD 	:
+0000 			# add [rax],al         offset 000002DF 	:
+0000 			# add [rax],al         offset 000002E1 	:
+0000 			# add [rax],al         offset 000002E3 	:
+0000 			# add [rax],al         offset 000002E5 	:
+0000 			# add [rax],al         offset 000002E7 	:
+0000 			# add [rax],al         offset 000002E9 	:
+0000 			# add [rax],al         offset 000002EB 	:
+0000 			# add [rax],al         offset 000002ED 	:
+0000 			# add [rax],al         offset 000002EF 	:
+0000 			# add [rax],al         offset 000002F1 	:
+0000 			# add [rax],al         offset 000002F3 	:
+0000 			# add [rax],al         offset 000002F5 	:
+0000 			# add [rax],al         offset 000002F7 	:
+0000 			# add [rax],al         offset 000002F9 	:
+0000 			# add [rax],al         offset 000002FB 	:
+0000 			# add [rax],al         offset 000002FD 	:
+0000 			# add [rax],al         offset 000002FF 	:
+0000 			# add [rax],al         offset 00000301 	:
+0000 			# add [rax],al         offset 00000303 	:
+0000 			# add [rax],al         offset 00000305 	:
+0000 			# add [rax],al         offset 00000307 	:
+0000 			# add [rax],al         offset 00000309 	:
+0000 			# add [rax],al         offset 0000030B 	:
+0000 			# add [rax],al         offset 0000030D 	:
+0000 			# add [rax],al         offset 0000030F 	:
+0000 			# add [rax],al         offset 00000311 	:
+0000 			# add [rax],al         offset 00000313 	:
+0000 			# add [rax],al         offset 00000315 	:
+0000 			# add [rax],al         offset 00000317 	:
+0000 			# add [rax],al         offset 00000319 	:
+0000 			# add [rax],al         offset 0000031B 	:
+0000 			# add [rax],al         offset 0000031D 	:
+0000 			# add [rax],al         offset 0000031F 	:
+0000 			# add [rax],al         offset 00000321 	:
+0000 			# add [rax],al         offset 00000323 	:
+0000 			# add [rax],al         offset 00000325 	:
+0000 			# add [rax],al         offset 00000327 	:
+0000 			# add [rax],al         offset 00000329 	:
+0000 			# add [rax],al         offset 0000032B 	:
+0000 			# add [rax],al         offset 0000032D 	:
+0000 			# add [rax],al         offset 0000032F 	:
+0000 			# add [rax],al         offset 00000331 	:
+0000 			# add [rax],al         offset 00000333 	:
+0000 			# add [rax],al         offset 00000335 	:
+0000 			# add [rax],al         offset 00000337 	:
+0000 			# add [rax],al         offset 00000339 	:
+0000 			# add [rax],al         offset 0000033B 	:
+0000 			# add [rax],al         offset 0000033D 	:
+0000 			# add [rax],al         offset 0000033F 	:
+0000 			# add [rax],al         offset 00000341 	:
+0000 			# add [rax],al         offset 00000343 	:
+0000 			# add [rax],al         offset 00000345 	:
+0000 			# add [rax],al         offset 00000347 	:
+0000 			# add [rax],al         offset 00000349 	:
+0000 			# add [rax],al         offset 0000034B 	:
+0000 			# add [rax],al         offset 0000034D 	:
+0000 			# add [rax],al         offset 0000034F 	:
+0000 			# add [rax],al         offset 00000351 	:
+0000 			# add [rax],al         offset 00000353 	:
+0000 			# add [rax],al         offset 00000355 	:
+0000 			# add [rax],al         offset 00000357 	:
+0000 			# add [rax],al         offset 00000359 	:
+0000 			# add [rax],al         offset 0000035B 	:
+0000 			# add [rax],al         offset 0000035D 	:
+0000 			# add [rax],al         offset 0000035F 	:
+0000 			# add [rax],al         offset 00000361 	:
+0000 			# add [rax],al         offset 00000363 	:
+0000 			# add [rax],al         offset 00000365 	:
+0000 			# add [rax],al         offset 00000367 	:
+0000 			# add [rax],al         offset 00000369 	:
+0000 			# add [rax],al         offset 0000036B 	:
+0000 			# add [rax],al         offset 0000036D 	:
+0000 			# add [rax],al         offset 0000036F 	:
+0000 			# add [rax],al         offset 00000371 	:
+0000 			# add [rax],al         offset 00000373 	:
+0000 			# add [rax],al         offset 00000375 	:
+0000 			# add [rax],al         offset 00000377 	:
+0000 			# add [rax],al         offset 00000379 	:
+0000 			# add [rax],al         offset 0000037B 	:
+0000 			# add [rax],al         offset 0000037D 	:
+0000 			# add [rax],al         offset 0000037F 	:
+0000 			# add [rax],al         offset 00000381 	:
+0000 			# add [rax],al         offset 00000383 	:
+0000 			# add [rax],al         offset 00000385 	:
+0000 			# add [rax],al         offset 00000387 	:
+0000 			# add [rax],al         offset 00000389 	:
+0000 			# add [rax],al         offset 0000038B 	:
+0000 			# add [rax],al         offset 0000038D 	:
+0000 			# add [rax],al         offset 0000038F 	:
+0000 			# add [rax],al         offset 00000391 	:
+0000 			# add [rax],al         offset 00000393 	:
+0000 			# add [rax],al         offset 00000395 	:
+0000 			# add [rax],al         offset 00000397 	:
+0000 			# add [rax],al         offset 00000399 	:
+0000 			# add [rax],al         offset 0000039B 	:
+0000 			# add [rax],al         offset 0000039D 	:
+0000 			# add [rax],al         offset 0000039F 	:
+0000 			# add [rax],al         offset 000003A1 	:
+0000 			# add [rax],al         offset 000003A3 	:
+0000 			# add [rax],al         offset 000003A5 	:
+0000 			# add [rax],al         offset 000003A7 	:
+0000 			# add [rax],al         offset 000003A9 	:
+0000 			# add [rax],al         offset 000003AB 	:
+0000 			# add [rax],al         offset 000003AD 	:
+0000 			# add [rax],al         offset 000003AF 	:
+0000 			# add [rax],al         offset 000003B1 	:
+0000 			# add [rax],al         offset 000003B3 	:
+0000 			# add [rax],al         offset 000003B5 	:
+0000 			# add [rax],al         offset 000003B7 	:
+0000 			# add [rax],al         offset 000003B9 	:
+0000 			# add [rax],al         offset 000003BB 	:
+0000 			# add [rax],al         offset 000003BD 	:
+0000 			# add [rax],al         offset 000003BF 	:
+0000 			# add [rax],al         offset 000003C1 	:
+0000 			# add [rax],al         offset 000003C3 	:
+0000 			# add [rax],al         offset 000003C5 	:
+0000 			# add [rax],al         offset 000003C7 	:
+0000 			# add [rax],al         offset 000003C9 	:
+0000 			# add [rax],al         offset 000003CB 	:
+0000 			# add [rax],al         offset 000003CD 	:
+0000 			# add [rax],al         offset 000003CF 	:
+0000 			# add [rax],al         offset 000003D1 	:
+0000 			# add [rax],al         offset 000003D3 	:
+0000 			# add [rax],al         offset 000003D5 	:
+0000 			# add [rax],al         offset 000003D7 	:
+0000 			# add [rax],al         offset 000003D9 	:
+0000 			# add [rax],al         offset 000003DB 	:
+0000 			# add [rax],al         offset 000003DD 	:
+0000 			# add [rax],al         offset 000003DF 	:
+0000 			# add [rax],al         offset 000003E1 	:
+0000 			# add [rax],al         offset 000003E3 	:
+0000 			# add [rax],al         offset 000003E5 	:
+0000 			# add [rax],al         offset 000003E7 	:
+0000 			# add [rax],al         offset 000003E9 	:
+0000 			# add [rax],al         offset 000003EB 	:
+0000 			# add [rax],al         offset 000003ED 	:
+0000 			# add [rax],al         offset 000003EF 	:
+0000 			# add [rax],al         offset 000003F1 	:
+0000 			# add [rax],al         offset 000003F3 	:
+0000 			# add [rax],al         offset 000003F5 	:
+0000 			# add [rax],al         offset 000003F7 	:
+0000 			# add [rax],al         offset 000003F9 	:
+0000 			# add [rax],al         offset 000003FB 	:
+0000 			# add [rax],al         offset 000003FD 	:
+00 			# db 0x00         offset 000003FF 	:
