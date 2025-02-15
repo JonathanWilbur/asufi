@@ -5,6 +5,48 @@
 - [ ] Stage 3: Write a hex++ assembler
 - [ ] Stage 4: Write an assembly assembler
 
+## Why?
+
+I am trying to write a C compiler that:
+
+1. Runs in a UEFI environment (difficulty: impossible)
+2. Can compile the Linux kernel, even if it is just a really old simple version. (difficulty: impossible)
+
+I want this C compiler to be bootstrapped using only a very small, auditable
+binary so you can ensure that there are no backdoors whatsoever in the Linux
+kernel that you build, including those that might have been introduced from
+build tools rather than the source code. So we need this small, auditable binary
+to build something, perhaps recursively, until we bootstrap a UEFI C compiler.
+
+This small, auditable binary will be a program that can be viewed and understood
+by using the UEFI shell's standard `hexedit` command, so that nothing except the
+underlying firmware has to be trusted. Further, this binary must be able to
+build itself. I can think of no better solution than a hexadecimal assembler.
+
+The idea is that it would simply take hexadecimal bytes and convert them to
+bytes, but these hexadecimal bytes could be split across lines and have comments
+so that each byte can be annotated with what it actually does, thereby making
+this tiny binary extremely understandable and reproducible.
+
+One that is working, the idea is to build a "hex++" assembler, which will add
+features like padding, labels, and maybe macros. After this is working, it is
+my hope that I can build a C compiler based off ChibiCC that can, in turn,
+compile a modified TinyCC that compiles the Linux Kernel.
+
+I do not consider it cheating to compile these things on a non-trusted machine
+such as my personal computer, then convert the byte code back into hex, as long
+as I can annotate the hex and explain what almost every instruction is doing. I
+am assuming that, since a hexadecimal file is not an executable, it cannot be
+used to "hack" your EFI environment, so it is valid to include these hex files
+in the EFI image, as long as they are actually assembled / compiled with
+trustworthy, audited tools. However, I do not want to rely on gigantic hex
+files, because, at some point, it would take forever to review them for a
+sufficiently complex program like TinyCC. As such, I am hoping to produce a
+hex file that is less than 10K bytes or so that can compile TinyCC for UEFI,
+It may even be sufficient to use ChibiCC to produce the assembly for TinyCC, and
+write an assembler in hex++. Time and experimentation will tell which approach
+is preferable.
+
 ## Compiling Hex with only Linux Commands
 
 Run this command
